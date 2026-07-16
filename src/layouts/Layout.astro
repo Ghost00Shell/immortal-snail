@@ -1,0 +1,81 @@
+---
+import "@fontsource-variable/bricolage-grotesque/wght.css";
+import "@fontsource-variable/nunito/wght.css";
+import "../styles/global.css";
+import Art from "../components/Art.astro";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+const {
+  title = "The Immortal Snail",
+  description = "You are given ten million dollars. You are immortal. There is one condition.",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#eaf6f3" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+  </head>
+  <body>
+    <div class="sky" aria-hidden="true"></div>
+
+    <!-- The companion: a snail that trails just behind the cursor for the
+         whole page. Purely atmospheric, so it is hidden from assistive tech
+         and pointer events, and removed entirely under reduced motion. -->
+    <div class="companion" data-companion aria-hidden="true">
+      <div class="companion__float" data-companion-float>
+        <Art name="snail" class="companion__snail" />
+      </div>
+    </div>
+
+    <div class="shell">
+      <slot />
+    </div>
+
+    <script>
+      import "../scripts/experience.js";
+    </script>
+
+    <style>
+      .companion {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: clamp(58px, 7vw, 96px);
+        z-index: var(--z-companion);
+        pointer-events: none;
+        will-change: transform;
+        opacity: 0;
+        transform: translate3d(-200px, -200px, 0);
+        filter: drop-shadow(0 10px 14px rgba(40, 70, 80, 0.28));
+      }
+      .companion__snail {
+        transform: scaleX(-1); /* face the direction of travel */
+      }
+      /* No pointer, or a user who opts out of motion: no floating companion. */
+      @media (hover: none), (pointer: coarse) {
+        .companion {
+          display: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .companion {
+          display: none;
+        }
+      }
+    </style>
+  </body>
+</html>

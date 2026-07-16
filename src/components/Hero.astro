@@ -1,0 +1,167 @@
+---
+import Art from "../components/Art.astro";
+---
+
+<section class="hero section" aria-labelledby="hero-heading">
+  <div class="hero__inner wrap">
+    <p class="hero__kicker" data-hero-line>A modest thought experiment.</p>
+
+    <h1 id="hero-heading" class="hero__heading">
+      <span class="hero__line hero__line--offer" data-hero-line>
+        You are given <span class="hero__figure">$10,000,000<span class="hero__dot">.</span></span>
+      </span>
+      <span class="hero__line hero__line--offer" data-hero-line>
+        You are <span class="hero__stress">immortal</span>.
+      </span>
+      <span class="hero__line hero__line--turn" data-hero-line>
+        There is one condition.
+      </span>
+    </h1>
+
+    <p class="hero__scroll muted" data-hero-line>
+      <span>Keep scrolling.</span>
+      <span class="hero__arrow" aria-hidden="true">↓</span>
+    </p>
+  </div>
+
+  <!-- The star, sitting quietly in the garden. Small. Smiling. Patient. -->
+  <div class="hero__snail" data-parallax data-depth="0.12">
+    <Art name="snail" label="A small, cheerful cartoon snail." />
+  </div>
+
+  <div class="hero__flora hero__flora--a" data-parallax data-depth="0.3">
+    <Art name="flora-15" />
+  </div>
+  <div class="hero__flora hero__flora--b" data-parallax data-depth="0.2">
+    <Art name="flora-03" />
+  </div>
+  <div class="hero__flora hero__flora--c" data-parallax data-depth="0.42">
+    <Art name="flora-05" />
+  </div>
+</section>
+
+<style>
+  .hero {
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    overflow: clip;
+  }
+
+  .hero__inner {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+  }
+
+  .hero__kicker {
+    font-size: var(--step-1);
+    color: var(--ink-soft);
+    margin-bottom: clamp(1.2rem, 3vw, 2rem);
+    font-weight: 600;
+  }
+
+  .hero__heading {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.3rem, 1.2vw, 0.9rem);
+    font-size: var(--step-4);
+    color: var(--display-ink);
+  }
+
+  .hero__line--turn {
+    font-size: 0.62em;
+    color: var(--ink-soft);
+    font-weight: 600;
+    margin-top: clamp(0.6rem, 2vw, 1.4rem);
+  }
+
+  .hero__figure {
+    color: var(--leaf);
+    white-space: nowrap;
+  }
+  .hero__dot {
+    color: var(--display-ink);
+  }
+
+  .hero__stress {
+    color: var(--teal-deep);
+    font-style: italic;
+  }
+
+  .hero__scroll {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: clamp(2rem, 6vw, 4rem);
+    font-size: var(--step-0);
+    font-weight: 600;
+  }
+
+  .hero__arrow {
+    display: inline-block;
+    animation: nudge 2.4s var(--ease-out) infinite;
+  }
+
+  @keyframes nudge {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(6px);
+    }
+  }
+
+  .hero__snail {
+    position: absolute;
+    z-index: 1;
+    right: clamp(-2rem, 3vw, 5rem);
+    bottom: clamp(4rem, 12vh, 10rem);
+    width: clamp(160px, 26vw, 360px);
+    filter: drop-shadow(0 24px 30px rgba(40, 70, 80, 0.22));
+  }
+
+  .hero__flora {
+    position: absolute;
+    z-index: 0;
+    opacity: 0.95;
+  }
+  .hero__flora--a {
+    width: clamp(70px, 9vw, 130px);
+    top: 14%;
+    right: 22%;
+  }
+  .hero__flora--b {
+    width: clamp(90px, 12vw, 170px);
+    bottom: 8%;
+    left: 6%;
+  }
+  .hero__flora--c {
+    width: clamp(40px, 6vw, 80px);
+    top: 22%;
+    left: 12%;
+  }
+
+  @media (max-width: 720px) {
+    .hero__snail {
+      position: relative;
+      right: auto;
+      bottom: auto;
+      margin-top: clamp(2.5rem, 8vw, 4rem);
+      width: clamp(150px, 46vw, 240px);
+    }
+    .hero__flora--a {
+      display: none;
+    }
+    .hero {
+      overflow: visible;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero__arrow {
+      animation: none;
+    }
+  }
+</style>

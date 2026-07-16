@@ -1,0 +1,100 @@
+---
+import Art from "../components/Art.astro";
+---
+
+<section class="finale" aria-labelledby="finale-heading" data-finale>
+  <div class="finale__stage" data-finale-stage>
+    <div class="finale__snail" data-finale-snail>
+      <Art name="snail" label="The immortal snail, now very close." />
+    </div>
+
+    <div class="finale__copy">
+      <h2 id="finale-heading" class="finale__title" data-finale-title>
+        You're too late.
+      </h2>
+      <p class="finale__coda" data-finale-coda>
+        You had ten million dollars and all the time in the world.
+        <span>So did it.</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .finale {
+    position: relative;
+    min-height: 260vh; /* deterministic scroll length for the zoom */
+  }
+
+  .finale__stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    display: grid;
+    place-items: center;
+    overflow: clip;
+    isolation: isolate;
+    /* The finale owns a dusk backdrop so its light copy stays readable
+       even when the scroll-driven sky hasn't dimmed (reduced motion, no JS).
+       In full motion the drifting sky has already reached dusk here, so the
+       two meet seamlessly. */
+    background:
+      radial-gradient(120% 90% at 50% 8%, #34485a 0%, transparent 55%),
+      linear-gradient(180deg, #2f3f4c 0%, #16212b 100%);
+  }
+
+  .finale__snail {
+    grid-area: 1 / 1;
+    width: min(122vmin, 1100px);
+    transform-origin: 58% 46%; /* zoom toward the snail's face */
+    z-index: 1;
+    filter: drop-shadow(0 30px 60px rgba(10, 24, 30, 0.4));
+  }
+
+  .finale__copy {
+    grid-area: 1 / 1;
+    z-index: 2;
+    text-align: center;
+    padding: 1.5rem;
+    max-width: 40rem;
+    justify-self: center;
+    align-self: center;
+  }
+
+  /* A soft scrim keeps the title readable over the snail's light body. */
+  .finale__title {
+    position: relative;
+    font-size: var(--step-4);
+    color: var(--paper-ink);
+    text-shadow: 0 4px 28px rgba(8, 20, 26, 0.55);
+  }
+
+  .finale__coda {
+    margin-top: clamp(1rem, 3vw, 1.8rem);
+    font-size: var(--step-1);
+    font-weight: 600;
+    color: color-mix(in srgb, var(--paper-ink) 88%, transparent);
+    text-shadow: 0 2px 18px rgba(8, 20, 26, 0.6);
+    text-wrap: balance;
+  }
+  .finale__coda span {
+    display: block;
+    margin-top: 0.35rem;
+    color: var(--paper-ink);
+  }
+
+  @media (max-width: 720px) {
+    .finale {
+      min-height: 200vh;
+    }
+    .finale__snail {
+      width: 150vmin;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .finale {
+      min-height: 100svh;
+    }
+  }
+</style>

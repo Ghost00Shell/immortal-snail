@@ -1,0 +1,185 @@
+---
+import Art from "../components/Art.astro";
+
+/** Each escape plan and the snail's quiet, patient rebuttal. The futility
+ *  always turns on time — never on shaky physics. */
+const plans = [
+  {
+    idea: "You build a decoy snail.",
+    reply: "It is not fooled. It has never, in all of history, been fooled.",
+    flora: "flora-01",
+    depth: 0.3,
+  },
+  {
+    idea: "You pay another snail to seduce it.",
+    reply: "Snails are not romantics. It keeps coming.",
+    flora: "flora-10",
+    depth: 0.22,
+  },
+  {
+    idea: "You seal it in a concrete tomb.",
+    reply: "Concrete lasts a century. It has all of them.",
+    flora: "flora-12",
+    depth: 0.36,
+  },
+  {
+    idea: "You bury it in Antarctica, inside a mason jar.",
+    reply: "Ice ages come and go. It is still in the jar. Still waiting.",
+    flora: "flora-15",
+    depth: 0.28,
+  },
+  {
+    idea: "You move constantly. You never sleep in the same place twice.",
+    reply: "It has nothing else to do but learn your patterns.",
+    flora: "flora-03",
+    depth: 0.32,
+  },
+  {
+    idea: "You live inside a bubble.",
+    reply: "You have to come out eventually. It does not.",
+    flora: "flora-14",
+    depth: 0.24,
+  },
+  {
+    idea: "You move into a salt mine.",
+    reply: "You run out of salt long before it runs out of patience.",
+    flora: "flora-16",
+    depth: 0.34,
+  },
+  {
+    idea: "You launch it into space.",
+    reply: "Orbits decay. Everything comes back down. Eventually, so does it.",
+    flora: "flora-13",
+    depth: 0.3,
+  },
+];
+---
+
+<section class="plans section" aria-labelledby="plans-heading">
+  <div class="wrap">
+    <h2 id="plans-heading" class="plans__q" data-reveal>What would you do?</h2>
+
+    <ol class="plans__list" role="list">
+      {
+        plans.map((p, i) => (
+          <li class="plan" data-side={i % 2}>
+            <div
+              class="plan__art"
+              data-parallax
+              data-depth={p.depth.toString()}
+            >
+              <Art name={p.flora} />
+            </div>
+            <div class="plan__body">
+              <p class="plan__idea" data-reveal>
+                {p.idea}
+              </p>
+              <p class="plan__reply" data-reveal>
+                <span class="plan__mark" aria-hidden="true">
+                  <Art name="snail" />
+                </span>
+                <span class="plan__reply-text">{p.reply}</span>
+              </p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .plans {
+    overflow: clip;
+  }
+
+  .plans__q {
+    font-size: var(--step-3);
+    color: var(--display-ink);
+    text-align: center;
+    max-width: 16ch;
+    margin-inline: auto;
+    margin-bottom: clamp(3.5rem, 10vw, 7rem);
+  }
+
+  .plans__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(5rem, 13vw, 11rem);
+  }
+
+  .plan {
+    display: flex;
+    align-items: center;
+    gap: clamp(1.6rem, 5vw, 4rem);
+    max-width: 54rem;
+    margin-inline: auto;
+    width: 100%;
+  }
+  .plan[data-side="1"] {
+    flex-direction: row-reverse;
+  }
+
+  .plan__art {
+    flex: 0 0 clamp(96px, 15vw, 200px);
+    filter: drop-shadow(0 16px 22px rgba(40, 70, 80, 0.16));
+  }
+
+  .plan__body {
+    flex: 1 1 auto;
+    max-width: 34ch;
+  }
+
+  .plan__idea {
+    font-family: "Bricolage Grotesque Variable", sans-serif;
+    font-weight: 600;
+    font-size: var(--step-2);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+
+  .plan__reply {
+    margin-top: 1.1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    background: var(--surface);
+    border: 1px solid var(--surface-line);
+    border-radius: 0.9rem;
+    padding: 0.85rem 1.1rem;
+    box-shadow: 0 14px 34px -26px rgba(30, 45, 52, 0.5);
+  }
+
+  .plan__mark {
+    flex: 0 0 auto;
+    width: 34px;
+    margin-top: 0.1rem;
+    transform: scaleX(-1);
+  }
+
+  .plan__reply-text {
+    font-style: italic;
+    color: var(--ink-soft);
+    font-size: var(--step-0);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    .plan,
+    .plan[data-side="1"] {
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      gap: 1.4rem;
+    }
+    .plan__art {
+      flex-basis: auto;
+      width: clamp(110px, 34vw, 150px);
+    }
+  }
+</style>

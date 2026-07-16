@@ -1,0 +1,142 @@
+---
+import Art from "../components/Art.astro";
+---
+
+<section class="condition section" aria-labelledby="condition-heading">
+  <div class="wrap condition__inner">
+    <h2 id="condition-heading" class="condition__heading" data-reveal>
+      An immortal snail is chasing you.
+    </h2>
+    <p class="condition__sub lead muted" data-reveal>
+      Right now. It set off the moment you said yes.
+    </p>
+
+    <ul class="rules" role="list">
+      <li class="rule" data-reveal>
+        It knows exactly where you are. It has always known.
+      </li>
+      <li class="rule" data-reveal>
+        It never rests, never wanders, never loses the scent. It only ever
+        moves toward you.
+      </li>
+      <li class="rule rule--stress" data-reveal>
+        If it reaches you — if it so much as touches you — you die.
+      </li>
+      <li class="rule" data-reveal>
+        You cannot simply outlast it. You have forever. That was the gift. So
+        does it.
+      </li>
+      <li class="rule" data-reveal>
+        And you cannot lock it away for good. Every wall, every ocean, every
+        orbit is temporary to something with all the time in the world.
+      </li>
+    </ul>
+
+    <p class="condition__turn" data-reveal>So.</p>
+  </div>
+
+  <div class="condition__flora condition__flora--a" data-parallax data-depth="0.25">
+    <Art name="flora-04" />
+  </div>
+  <div class="condition__flora condition__flora--b" data-parallax data-depth="0.34">
+    <Art name="flora-11" />
+  </div>
+</section>
+
+<style>
+  .condition {
+    overflow: clip;
+  }
+
+  .condition__inner {
+    max-width: 46rem;
+  }
+
+  .condition__heading {
+    font-size: var(--step-3);
+    color: var(--display-ink);
+  }
+
+  .condition__sub {
+    margin-top: 1rem;
+    max-width: 30ch;
+  }
+
+  .rules {
+    list-style: none;
+    margin: clamp(2.5rem, 7vw, 4.5rem) 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.6rem, 4vw, 2.6rem);
+  }
+
+  .rule {
+    font-family: "Bricolage Grotesque Variable", sans-serif;
+    font-weight: 500;
+    font-size: var(--step-2);
+    line-height: 1.18;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    max-width: 24ch;
+    text-wrap: balance;
+    padding-left: clamp(1.2rem, 3vw, 2rem);
+    position: relative;
+  }
+
+  /* Leading tick made from the coral accent — a dot, not a side-stripe. */
+  .rule::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.62em;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--teal-shell);
+  }
+
+  .rule--stress {
+    color: var(--coral);
+    font-weight: 700;
+  }
+  .rule--stress::before {
+    background: var(--coral);
+  }
+
+  .condition__turn {
+    margin-top: clamp(3rem, 8vw, 5rem);
+    font-family: "Bricolage Grotesque Variable", sans-serif;
+    font-size: var(--step-3);
+    font-weight: 700;
+    color: var(--display-ink);
+    letter-spacing: -0.03em;
+  }
+
+  .condition__flora {
+    position: absolute;
+    z-index: 0;
+    opacity: 0.9;
+  }
+  .condition__flora--a {
+    width: clamp(80px, 11vw, 150px);
+    top: 12%;
+    right: 8%;
+  }
+  .condition__flora--b {
+    width: clamp(60px, 8vw, 110px);
+    bottom: 10%;
+    right: 18%;
+  }
+
+  @media (max-width: 720px) {
+    .condition__flora--a {
+      width: 90px;
+      right: 4%;
+      top: 4%;
+    }
+    .condition__flora--b {
+      display: none;
+    }
+  }
+</style>

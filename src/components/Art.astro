@@ -1,0 +1,43 @@
+---
+/**
+ * Inlines one sliced artwork partial (snail or a flora piece) directly into
+ * the document so its shapes can be styled and animated. Decorative by
+ * default; pass `label` to expose it to assistive tech as a named image.
+ */
+interface Props {
+  name: string;
+  class?: string;
+  label?: string;
+  style?: string;
+}
+const { name, class: className = "", label, style } = Astro.props;
+
+const arts = import.meta.glob("../assets/art/*.svg", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+const key = Object.keys(arts).find((k) => k.endsWith(`/${name}.svg`));
+const raw = (key ? arts[key] : "") as string;
+
+if (!raw) throw new Error(`Art partial not found: ${name}`);
+
+const roleAttrs = label
+  ? { role: "img", "aria-label": label }
+  : { "aria-hidden": "true" };
+---
+
+<span class:list={["artwork", className]} style={style} {...roleAttrs} set:html={raw} />
+
+<style>
+  .artwork {
+    display: block;
+    line-height: 0;
+  }
+  .artwork :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+</style>

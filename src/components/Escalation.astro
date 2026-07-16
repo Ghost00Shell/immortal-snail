@@ -1,0 +1,46 @@
+---
+---
+
+<!-- The turn into dusk. This marker also cues the world to dim (see the
+     experience script), so the finale arrives in the dark. -->
+<section class="escalation section" aria-label="The inevitability" data-dusk>
+  <div class="wrap escalation__inner">
+    <p class="escalation__line" data-reveal>You will try everything.</p>
+    <p class="escalation__line" data-reveal>You will try nothing.</p>
+    <p class="escalation__line escalation__line--last" data-reveal>
+      In the end it comes to the same thing.
+    </p>
+  </div>
+</section>
+
+<style>
+  .escalation {
+    text-align: center;
+    padding-block: clamp(8rem, 22vh, 16rem);
+  }
+
+  .escalation__inner {
+    max-width: 40rem;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.4rem, 4vw, 2.6rem);
+  }
+
+  .escalation__line {
+    font-family: "Bricolage Grotesque Variable", sans-serif;
+    font-weight: 600;
+    font-size: var(--step-2);
+    letter-spacing: -0.02em;
+    color: var(--display-ink);
+    text-wrap: balance;
+  }
+
+  .escalation__line--last {
+    color: var(--ink-soft);
+  }
+
+  /* Once the world has dimmed, the muted line follows the light ink. */
+  :global(body.is-dusk) .escalation__line--last {
+    color: color-mix(in srgb, var(--paper-ink) 84%, transparent);
+  }
+</style>
