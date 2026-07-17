@@ -35,6 +35,10 @@ import Art from "../components/Art.astro";
     top: 0;
     height: 100svh;
     display: grid;
+    /* A single full-width column keeps the oversized, scaled snail centred on
+       the viewport: without capping the track, the snail (wider than the
+       screen) would stretch the column and left-anchor the whole scene. */
+    grid-template-columns: minmax(0, 1fr);
     place-items: center;
     overflow: clip;
     isolation: isolate;
@@ -60,7 +64,7 @@ import Art from "../components/Art.astro";
 
   .finale__snail {
     width: 100%;
-    transform-origin: 24% 40%; /* the eyes, after the horizontal flip */
+    transform-origin: 52% 33%; /* centred on the eyes, after the horizontal flip */
     filter: drop-shadow(0 30px 60px rgba(10, 24, 30, 0.4));
   }
 
@@ -75,8 +79,9 @@ import Art from "../components/Art.astro";
     z-index: 2;
     text-align: center;
     padding: 1.5rem;
-    max-width: 40rem;
-    justify-self: center;
+    /* Bounded width so the title wraps within the viewport instead of
+       overflowing on a single line on narrow screens. */
+    width: min(40rem, 100%);
     align-self: end;
     margin-bottom: clamp(1.5rem, 7vh, 5rem);
   }

@@ -174,8 +174,24 @@ function build() {
         const snail = finale.querySelector("[data-finale-snail]");
         const title = finale.querySelector("[data-finale-title]");
         const coda = finale.querySelector("[data-finale-coda]");
+        // The dark irises redden and swell; the white catch-light glints fade
+        // so the eyes lose their friendly gleam.
+        const finaleIris = finale.querySelectorAll(".snail__iris");
+        const finaleGlints = finale.querySelectorAll(".snail__eye:not(.snail__iris)");
+
         gsap.set([title, coda], { autoAlpha: 0, y: 24 });
-        gsap.set(snail, { transformOrigin: "33% 33%" });
+        // The snail is already at full size in the finale; the scroll slides it
+        // up rather than growing it, so a constant scale centred on the eyes
+        // never fights the vertical travel.
+        gsap.set(snail, { transformOrigin: "52% 33%", scale: 3.1 });
+        gsap.set(finaleIris, { transformBox: "fill-box", transformOrigin: "50% 50%" });
+
+        // Function-based pixel translation: the scaled snail overflows the
+        // riser box, so viewport-relative pixels (not the riser's unscaled
+        // layout height) reliably carry it from below the fold up until only
+        // the eyes fill the frame.
+        const startY = () => window.innerHeight * 1.15;
+        const endY = () => window.innerHeight * 0.4;
 
         const zoom = gsap.timeline({
           scrollTrigger: {
@@ -183,20 +199,21 @@ function build() {
             start: "top top",
             end: "bottom bottom",
             scrub: 0.5,
+            invalidateOnRefresh: true,
           },
         });
         zoom
           .fromTo(
             riser,
-            { yPercent: 70, xPercent: 0 },
-            { yPercent: -4, xPercent: 9, ease: "power1.out", duration: 1 },
+            { y: startY, autoAlpha: 0.92 },
+            { y: endY, autoAlpha: 1, ease: "power1.out", duration: 1 },
             0
           )
-          .fromTo(
-            snail,
-            { scale: 0.55, autoAlpha: 0.92 },
-            { scale: 3.1, autoAlpha: 1, ease: "power2.in", duration: 1 },
-            0
+          .to(finaleGlints, { autoAlpha: 0, duration: 0.3 }, 0.42)
+          .to(
+            finaleIris,
+            { fill: "#c81818", scale: 1.4, ease: "power2.in", duration: 0.55 },
+            0.48
           )
           .to(title, { autoAlpha: 1, y: 0, duration: 0.26 }, 0.6)
           .to(coda, { autoAlpha: 1, y: 0, duration: 0.26 }, 0.76);
@@ -224,9 +241,14 @@ function build() {
 
         let activated = false;
         let fallback;
+        // Set once the companion has taken its final leave, so a late
+        // activation can never restart roaming through the finale.
+        let departRoam = null;
+        let departureReached = false;
 
         const startRoam = () => {
           if (!(fine && companion && floatEl)) return;
+          if (departureReached) return;
           const snailEl = companion.querySelector(".companion__snail");
           const w = companion.offsetWidth || 80;
           const h = companion.offsetHeight || 80;
@@ -340,6 +362,29 @@ function build() {
             }
           );
 
+          // The companion takes its leave for good once the page resigns
+          // itself to the inevitable, gliding straight off the bottom so the
+          // finale snail is the only one left. It reads its live rendered
+          // position first so the exit never jumps.
+          let departing = false;
+          const depart = () => {
+            if (!alive || departing) return;
+            departing = true;
+            roamTweens.forEach((t) => t.kill());
+            roamTweens.length = 0;
+            wobble.kill();
+            loom.kill();
+            gsap.killTweensOf(companion);
+            const curX = Number(gsap.getProperty(companion, "x")) || 0;
+            const curY = Number(gsap.getProperty(companion, "y")) || 0;
+            center = { x: curX + w / 2, y: curY + h / 2 };
+            glideTo(edgePoint("bottom"), "power2.in", () => {
+              gsap.set(companion, { autoAlpha: 0 });
+              alive = false;
+            });
+          };
+          departRoam = depart;
+
           cleanups.push(() => {
             alive = false;
             roamTweens.forEach((t) => t.kill());
@@ -395,15 +440,35 @@ function build() {
           onEnter: activate,
         });
 
+        // Once the escalation resigns itself to the inevitable, the companion
+        // leaves for good and hands the stage to the finale snail.
+        const exitCue = document.querySelector("[data-companion-exit]");
+        let exitTrigger;
+        if (exitCue) {
+          exitTrigger = ScrollTrigger.create({
+            trigger: exitCue,
+            start: "top 75%",
+            once: true,
+            onEnter: () => {
+              departureReached = true;
+              if (departRoam) departRoam();
+            },
+          });
+        }
+
         cleanups.push(() => {
           if (dealBtn) dealBtn.removeEventListener("click", onDealClick);
           if (fallback) fallback.kill();
+          if (exitTrigger) exitTrigger.kill();
         });
       }
 
       // ---- A shared, occasional blink across every snail on the page ----
-      // They are all the same creature, so they blink as one.
-      const eyes = gsap.utils.toArray(".snail__eye");
+      // They are all the same creature, so they blink as one. The finale snail
+      // is excluded — its eyes redden and swell instead of blinking.
+      const eyes = gsap.utils
+        .toArray(".snail__eye")
+        .filter((el) => !el.closest("[data-finale]"));
       let blink;
       if (eyes.length) {
         gsap.set(eyes, { transformOrigin: "50% 50%" });
