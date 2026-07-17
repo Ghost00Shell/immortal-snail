@@ -28,6 +28,16 @@ const {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <!-- Progressive enhancement flags set before first paint: `js` marks that
+         scripting is available; `deal-armed` opts the hero into its click-to-
+         reveal intro, unless the visitor arrived deep-linked at the condition. -->
+    <script is:inline>
+      (function () {
+        var h = document.documentElement;
+        h.classList.add("js");
+        if (location.hash !== "#the-condition") h.classList.add("deal-armed");
+      })();
+    </script>
   </head>
   <body>
     <div class="sky" aria-hidden="true"></div>

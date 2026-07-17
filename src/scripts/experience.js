@@ -163,14 +163,19 @@ function build() {
         });
       }
 
-      // ---- Finale zoom: sticky stage, scrubbed scale (no GSAP pin) ----
+      // ---- Finale: the snail rises from below and zooms to just its eyes ----
+      // The rise (translate) and the zoom (scale about the eyes) live on two
+      // separate elements so an origin-based scale never fights the translate:
+      // the riser controls where the eyes land, the inner scale controls how
+      // much of the snail is cropped away until only the eyes remain.
       const finale = document.querySelector("[data-finale]");
       if (finale) {
+        const riser = finale.querySelector("[data-finale-riser]");
         const snail = finale.querySelector("[data-finale-snail]");
         const title = finale.querySelector("[data-finale-title]");
         const coda = finale.querySelector("[data-finale-coda]");
         gsap.set([title, coda], { autoAlpha: 0, y: 24 });
-        gsap.set(snail, { transformOrigin: "58% 46%" });
+        gsap.set(snail, { transformOrigin: "33% 33%" });
 
         const zoom = gsap.timeline({
           scrollTrigger: {
@@ -182,33 +187,105 @@ function build() {
         });
         zoom
           .fromTo(
-            snail,
-            { scale: 0.16, rotate: -3, autoAlpha: 0.75 },
-            { scale: 1.28, rotate: 0, autoAlpha: 1, ease: "power1.in", duration: 1 },
+            riser,
+            { yPercent: 70, xPercent: 0 },
+            { yPercent: -4, xPercent: 9, ease: "power1.out", duration: 1 },
             0
           )
-          .to(title, { autoAlpha: 1, y: 0, duration: 0.28 }, 0.62)
-          .to(coda, { autoAlpha: 1, y: 0, duration: 0.28 }, 0.78);
+          .fromTo(
+            snail,
+            { scale: 0.55, autoAlpha: 0.92 },
+            { scale: 3.1, autoAlpha: 1, ease: "power2.in", duration: 1 },
+            0
+          )
+          .to(title, { autoAlpha: 1, y: 0, duration: 0.26 }, 0.6)
+          .to(coda, { autoAlpha: 1, y: 0, duration: 0.26 }, 0.76);
       }
 
-      // ---- The companion: a snail trailing just behind the cursor ----
+      // ---- The Deal gate: the offer's condition is withheld until accepted ----
+      // Clicking "Deal?" (or simply scrolling past the hero) slides in the
+      // catch and, on a fine pointer, releases the snail to begin its endless,
+      // never-quite-arriving pursuit of the cursor.
+      const dealBtn = document.querySelector("[data-deal]");
+      const conditionEl = document.querySelector("[data-condition]");
+      const cueEl = document.querySelector("[data-scroll-cue]");
+      const heroSnail = document.querySelector("[data-hero-snail]");
+      const companion = document.querySelector("[data-companion]");
+      const floatEl = document.querySelector("[data-companion-float]");
+
+      // Only intercept when the page loaded armed (i.e. not deep-linked
+      // straight to the condition), so a shared #the-condition URL stays legible.
+      const armed = root.classList.contains("deal-armed");
+
+      // Track the pointer before the chase begins so a scroll-triggered
+      // hand-off has somewhere sensible to seed the snail from.
+      let lastPointer = null;
+      const recordPointer = (e) => {
+        lastPointer = { x: e.clientX, y: e.clientY };
+      };
       if (fine) {
-        const companion = document.querySelector("[data-companion]");
-        const floatEl = document.querySelector("[data-companion-float]");
-        if (companion && floatEl) {
+        window.addEventListener("pointermove", recordPointer, { passive: true });
+        cleanups.push(() =>
+          window.removeEventListener("pointermove", recordPointer)
+        );
+      }
+
+      if (armed && conditionEl) {
+        // Own the hidden state inline so GSAP animates from a known start.
+        gsap.set(conditionEl, { autoAlpha: 0, x: 48 });
+        if (cueEl) gsap.set(cueEl, { autoAlpha: 0 });
+
+        let activated = false;
+        let fallback;
+
+        const startChase = () => {
+          if (!(fine && companion && floatEl)) return;
           const w = companion.offsetWidth || 80;
-          gsap.set(companion, { xPercent: 0, yPercent: 0, autoAlpha: 0 });
-          const xTo = gsap.quickTo(companion, "x", { duration: 0.7, ease: "power3" });
-          const yTo = gsap.quickTo(companion, "y", { duration: 0.7, ease: "power3" });
-          let seen = false;
+          const h = companion.offsetHeight || 80;
+          const minGap = Math.max(90, w * 0.9); // the snail never closes this gap
+
+          // Seed from the hero snail if it's still on screen, otherwise from
+          // the last known cursor position, otherwise a right-side default.
+          let seedX, seedY;
+          const r = heroSnail ? heroSnail.getBoundingClientRect() : null;
+          const inView =
+            r &&
+            r.bottom > 0 &&
+            r.top < window.innerHeight &&
+            r.right > 0 &&
+            r.left < window.innerWidth;
+          if (inView) {
+            seedX = r.left + r.width / 2;
+            seedY = r.top + r.height / 2;
+          } else if (lastPointer) {
+            seedX = lastPointer.x;
+            seedY = lastPointer.y;
+          } else {
+            seedX = window.innerWidth * 0.8;
+            seedY = window.innerHeight * 0.5;
+          }
+          gsap.set(companion, { x: seedX - w / 2, y: seedY - h / 2, autoAlpha: 0 });
+
+          const xTo = gsap.quickTo(companion, "x", { duration: 1.1, ease: "power3" });
+          const yTo = gsap.quickTo(companion, "y", { duration: 1.1, ease: "power3" });
+
+          gsap.to(companion, { autoAlpha: 1, duration: 0.8, delay: 0.1 });
+          if (heroSnail) gsap.to(heroSnail, { autoAlpha: 0, duration: 0.6 });
+
           const onMove = (e) => {
-            if (!seen) {
-              seen = true;
-              gsap.to(companion, { autoAlpha: 1, duration: 0.6 });
-            }
-            // trail a little behind and below the pointer
-            xTo(e.clientX - w * 0.5 - 26);
-            yTo(e.clientY - w * 0.5 + 18);
+            lastPointer = { x: e.clientX, y: e.clientY };
+            // Measure from the snail's rendered centre so the gap holds
+            // steady no matter how the cursor jumps.
+            const cx = gsap.getProperty(companion, "x") + w / 2;
+            const cy = gsap.getProperty(companion, "y") + h / 2;
+            const dx = e.clientX - cx;
+            const dy = e.clientY - cy;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 1 || dist <= minGap) return; // hold position inside the gap
+            const targetX = e.clientX - (dx / dist) * minGap;
+            const targetY = e.clientY - (dy / dist) * minGap;
+            xTo(targetX - w / 2);
+            yTo(targetY - h / 2);
           };
           window.addEventListener("pointermove", onMove, { passive: true });
 
@@ -241,9 +318,58 @@ function build() {
             window.removeEventListener("pointermove", onMove);
             wobble.kill();
             loom.kill();
+            gsap.killTweensOf(companion);
             gsap.set(companion, { clearProps: "all" });
           });
-        }
+        };
+
+        const activate = () => {
+          if (activated) return;
+          activated = true;
+          if (dealBtn) dealBtn.removeEventListener("click", onDealClick);
+          if (fallback) fallback.kill();
+
+          // Slide the condition in, then hand keyboard/SR focus to it before
+          // fading the button so focus is never stranded on a hidden element.
+          gsap.to(conditionEl, {
+            autoAlpha: 1,
+            x: 0,
+            duration: 0.9,
+            ease: "power3.out",
+            onStart: () => conditionEl.focus({ preventScroll: true }),
+          });
+          if (cueEl) gsap.to(cueEl, { autoAlpha: 1, duration: 0.6, delay: 0.5 });
+          if (dealBtn) {
+            gsap.to(dealBtn, {
+              autoAlpha: 0,
+              scale: 0.94,
+              duration: 0.5,
+              ease: "power2.in",
+              onComplete: () => gsap.set(dealBtn, { pointerEvents: "none" }),
+            });
+          }
+
+          startChase();
+        };
+
+        const onDealClick = (e) => {
+          e.preventDefault();
+          activate();
+        };
+        if (dealBtn) dealBtn.addEventListener("click", onDealClick);
+
+        // Scroll-past fallback: if they never click, reveal the catch anyway.
+        const heroSection = conditionEl.closest("section") || conditionEl;
+        fallback = ScrollTrigger.create({
+          trigger: heroSection,
+          start: "bottom 60%",
+          onEnter: activate,
+        });
+
+        cleanups.push(() => {
+          if (dealBtn) dealBtn.removeEventListener("click", onDealClick);
+          if (fallback) fallback.kill();
+        });
       }
 
       // ---- A shared, occasional blink across every snail on the page ----

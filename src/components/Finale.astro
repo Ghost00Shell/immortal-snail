@@ -4,8 +4,12 @@ import Art from "../components/Art.astro";
 
 <section class="finale" aria-labelledby="finale-heading" data-finale>
   <div class="finale__stage" data-finale-stage>
-    <div class="finale__snail" data-finale-snail>
-      <Art name="snail" label="The immortal snail, now very close." />
+    <div class="finale__riser" data-finale-riser>
+      <div class="finale__snail" data-finale-snail>
+        <div class="finale__snail-flip">
+          <Art name="snail" label="The immortal snail, now very close." />
+        </div>
+      </div>
     </div>
 
     <div class="finale__copy">
@@ -43,12 +47,27 @@ import Art from "../components/Art.astro";
       linear-gradient(180deg, #2f3f4c 0%, #16212b 100%);
   }
 
-  .finale__snail {
+  .finale__riser {
     grid-area: 1 / 1;
     width: min(122vmin, 1100px);
-    transform-origin: 58% 46%; /* zoom toward the snail's face */
+    justify-self: center;
+    align-self: center;
     z-index: 1;
+    /* No-JS default: sit a touch low so the static fallback still reads as
+       the snail looming up from below. JS drives the full rise + zoom. */
+    transform: translateY(6%);
+  }
+
+  .finale__snail {
+    width: 100%;
+    transform-origin: 24% 40%; /* the eyes, after the horizontal flip */
     filter: drop-shadow(0 30px 60px rgba(10, 24, 30, 0.4));
+  }
+
+  /* Flip lives on its own layer so the GSAP scale/translate above never
+     clobbers the facing direction. */
+  .finale__snail-flip {
+    transform: scaleX(-1);
   }
 
   .finale__copy {
@@ -58,7 +77,8 @@ import Art from "../components/Art.astro";
     padding: 1.5rem;
     max-width: 40rem;
     justify-self: center;
-    align-self: center;
+    align-self: end;
+    margin-bottom: clamp(1.5rem, 7vh, 5rem);
   }
 
   /* A soft scrim keeps the title readable over the snail's light body. */
@@ -87,7 +107,7 @@ import Art from "../components/Art.astro";
     .finale {
       min-height: 200vh;
     }
-    .finale__snail {
+    .finale__riser {
       width: 150vmin;
     }
   }

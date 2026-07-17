@@ -189,3 +189,18 @@ a {
   white-space: nowrap;
   border: 0;
 }
+
+/* Progressive enhancement: when scripting is present and the visitor hasn't
+   opted out of motion, the hero's payoff (the condition line and the scroll
+   cue) start hidden so the script can reveal them after the deal is struck.
+   With no JS, or under reduced motion, they simply stay visible. */
+@media (prefers-reduced-motion: no-preference) {
+  html.deal-armed [data-condition],
+  html.deal-armed [data-scroll-cue] {
+    opacity: 0;
+  }
+  html.deal-armed [data-condition] {
+    transform: translateX(48px);
+  }
+}
+
