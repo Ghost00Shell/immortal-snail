@@ -42,9 +42,10 @@ const {
   <body>
     <div class="sky" aria-hidden="true"></div>
 
-    <!-- The companion: a snail that trails just behind the cursor for the
-         whole page. Purely atmospheric, so it is hidden from assistive tech
-         and pointer events, and removed entirely under reduced motion. -->
+    <!-- The companion: a snail that roams the page freely once the deal is
+         struck, wandering off one edge and back in from another. Purely
+         atmospheric, so it is hidden from assistive tech and pointer events,
+         and removed entirely under reduced motion. -->
     <div class="companion" data-companion aria-hidden="true">
       <div class="companion__float" data-companion-float>
         <Art name="snail" class="companion__snail" />
@@ -73,7 +74,7 @@ const {
         filter: drop-shadow(0 10px 14px rgba(40, 70, 80, 0.28));
       }
       .companion__snail {
-        transform: scaleX(-1); /* face the direction of travel */
+        transform: scaleX(-1); /* default facing; JS drives it while roaming */
       }
       /* No pointer, or a user who opts out of motion: no floating companion. */
       @media (hover: none), (pointer: coarse) {

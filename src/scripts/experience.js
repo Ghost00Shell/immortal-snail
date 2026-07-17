@@ -204,8 +204,8 @@ function build() {
 
       // ---- The Deal gate: the offer's condition is withheld until accepted ----
       // Clicking "Deal?" (or simply scrolling past the hero) slides in the
-      // catch and, on a fine pointer, releases the snail to begin its endless,
-      // never-quite-arriving pursuit of the cursor.
+      // catch and releases the snail to roam the page of its own accord —
+      // drifting off one edge and wandering back in from another, forever.
       const dealBtn = document.querySelector("[data-deal]");
       const conditionEl = document.querySelector("[data-condition]");
       const cueEl = document.querySelector("[data-scroll-cue]");
@@ -217,19 +217,6 @@ function build() {
       // straight to the condition), so a shared #the-condition URL stays legible.
       const armed = root.classList.contains("deal-armed");
 
-      // Track the pointer before the chase begins so a scroll-triggered
-      // hand-off has somewhere sensible to seed the snail from.
-      let lastPointer = null;
-      const recordPointer = (e) => {
-        lastPointer = { x: e.clientX, y: e.clientY };
-      };
-      if (fine) {
-        window.addEventListener("pointermove", recordPointer, { passive: true });
-        cleanups.push(() =>
-          window.removeEventListener("pointermove", recordPointer)
-        );
-      }
-
       if (armed && conditionEl) {
         // Own the hidden state inline so GSAP animates from a known start.
         gsap.set(conditionEl, { autoAlpha: 0, x: 48 });
@@ -238,56 +225,95 @@ function build() {
         let activated = false;
         let fallback;
 
-        const startChase = () => {
+        const startRoam = () => {
           if (!(fine && companion && floatEl)) return;
+          const snailEl = companion.querySelector(".companion__snail");
           const w = companion.offsetWidth || 80;
           const h = companion.offsetHeight || 80;
-          const minGap = Math.max(90, w * 0.9); // the snail never closes this gap
+          const pad = Math.max(w, h) + 60; // distance past an edge that reads as "gone"
+          const roamTweens = [];
+          let alive = true;
 
-          // Seed from the hero snail if it's still on screen, otherwise from
-          // the last known cursor position, otherwise a right-side default.
-          let seedX, seedY;
+          const vw = () => window.innerWidth;
+          const vh = () => window.innerHeight;
+          // The companion is fixed at 0,0, so a translate equals the desired
+          // centre minus half the snail's size.
+          const toXY = (cx, cy) => ({ x: cx - w / 2, y: cy - h / 2 });
+
+          // Begin at the hero snail's spot if it's still on screen so the
+          // hand-off is seamless; otherwise ease in from just above the fold.
+          let center;
           const r = heroSnail ? heroSnail.getBoundingClientRect() : null;
-          const inView =
-            r &&
-            r.bottom > 0 &&
-            r.top < window.innerHeight &&
-            r.right > 0 &&
-            r.left < window.innerWidth;
-          if (inView) {
-            seedX = r.left + r.width / 2;
-            seedY = r.top + r.height / 2;
-          } else if (lastPointer) {
-            seedX = lastPointer.x;
-            seedY = lastPointer.y;
-          } else {
-            seedX = window.innerWidth * 0.8;
-            seedY = window.innerHeight * 0.5;
-          }
-          gsap.set(companion, { x: seedX - w / 2, y: seedY - h / 2, autoAlpha: 0 });
+          const onScreen =
+            r && r.bottom > 0 && r.top < vh() && r.right > 0 && r.left < vw();
+          center = onScreen
+            ? { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+            : { x: vw() * 0.5, y: -pad };
+          gsap.set(companion, { ...toXY(center.x, center.y), autoAlpha: 0 });
+          gsap.set(snailEl, { scaleX: 1 }); // JS now owns which way it faces
 
-          const xTo = gsap.quickTo(companion, "x", { duration: 1.1, ease: "power3" });
-          const yTo = gsap.quickTo(companion, "y", { duration: 1.1, ease: "power3" });
-
-          gsap.to(companion, { autoAlpha: 1, duration: 0.8, delay: 0.1 });
+          gsap.to(companion, { autoAlpha: 1, duration: 1, delay: 0.15 });
           if (heroSnail) gsap.to(heroSnail, { autoAlpha: 0, duration: 0.6 });
 
-          const onMove = (e) => {
-            lastPointer = { x: e.clientX, y: e.clientY };
-            // Measure from the snail's rendered centre so the gap holds
-            // steady no matter how the cursor jumps.
-            const cx = gsap.getProperty(companion, "x") + w / 2;
-            const cy = gsap.getProperty(companion, "y") + h / 2;
-            const dx = e.clientX - cx;
-            const dy = e.clientY - cy;
-            const dist = Math.hypot(dx, dy);
-            if (dist < 1 || dist <= minGap) return; // hold position inside the gap
-            const targetX = e.clientX - (dx / dist) * minGap;
-            const targetY = e.clientY - (dy / dist) * minGap;
-            xTo(targetX - w / 2);
-            yTo(targetY - h / 2);
+          const speed = 130; // px/sec — an unhurried, inevitable drift
+          let facing = 1;
+          // The art faces right at scaleX(1); flip it to match travel, but
+          // only on decisive horizontal movement so it doesn't jitter.
+          const face = (dx) => {
+            if (Math.abs(dx) < 12) return;
+            const dir = dx > 0 ? 1 : -1;
+            if (dir === facing) return;
+            facing = dir;
+            roamTweens.push(
+              gsap.to(snailEl, { scaleX: dir, duration: 0.5, ease: "power2.out" })
+            );
           };
-          window.addEventListener("pointermove", onMove, { passive: true });
+
+          const edgePoint = (edge) => {
+            if (edge === "left") return { x: -pad, y: gsap.utils.random(0, vh()) };
+            if (edge === "right") return { x: vw() + pad, y: gsap.utils.random(0, vh()) };
+            if (edge === "top") return { x: gsap.utils.random(0, vw()), y: -pad };
+            return { x: gsap.utils.random(0, vw()), y: vh() + pad };
+          };
+          const insidePoint = () => ({
+            x: gsap.utils.random(vw() * 0.12, vw() * 0.88),
+            y: gsap.utils.random(vh() * 0.14, vh() * 0.86),
+          });
+
+          const glideTo = (target, ease, onDone) => {
+            const dist = Math.hypot(target.x - center.x, target.y - center.y) || 1;
+            face(target.x - center.x);
+            roamTweens.push(
+              gsap.to(companion, {
+                ...toXY(target.x, target.y),
+                duration: gsap.utils.clamp(1.6, 7, dist / speed),
+                ease,
+                onComplete: () => {
+                  if (!alive) return;
+                  center = target;
+                  onDone();
+                },
+              })
+            );
+          };
+
+          const wander = () => {
+            if (!alive) return;
+            // Now and then it slips off one edge and reappears from another.
+            if (Math.random() < 0.4) {
+              const edges = ["left", "right", "top", "bottom"];
+              const exit = gsap.utils.random(edges);
+              glideTo(edgePoint(exit), "power1.in", () => {
+                const enter = gsap.utils.random(edges.filter((e) => e !== exit));
+                center = edgePoint(enter);
+                gsap.set(companion, toXY(center.x, center.y));
+                glideTo(insidePoint(), "power1.out", wander);
+              });
+            } else {
+              glideTo(insidePoint(), "sine.inOut", wander);
+            }
+          };
+          wander();
 
           const wobble = gsap.to(floatEl, {
             yPercent: -9,
@@ -315,11 +341,14 @@ function build() {
           );
 
           cleanups.push(() => {
-            window.removeEventListener("pointermove", onMove);
+            alive = false;
+            roamTweens.forEach((t) => t.kill());
             wobble.kill();
             loom.kill();
             gsap.killTweensOf(companion);
+            gsap.killTweensOf(snailEl);
             gsap.set(companion, { clearProps: "all" });
+            gsap.set(snailEl, { clearProps: "all" });
           });
         };
 
@@ -349,7 +378,7 @@ function build() {
             });
           }
 
-          startChase();
+          startRoam();
         };
 
         const onDealClick = (e) => {
