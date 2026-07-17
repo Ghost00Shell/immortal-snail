@@ -174,24 +174,26 @@ function build() {
         const snail = finale.querySelector("[data-finale-snail]");
         const title = finale.querySelector("[data-finale-title]");
         const coda = finale.querySelector("[data-finale-coda]");
-        // The dark irises redden and swell; the white catch-light glints fade
-        // so the eyes lose their friendly gleam.
+        // The dark irises redden while the white catch-light glints fade, so
+        // the eyes lose their friendly gleam without changing shape or size.
         const finaleIris = finale.querySelectorAll(".snail__iris");
         const finaleGlints = finale.querySelectorAll(".snail__eye:not(.snail__iris)");
 
         gsap.set([title, coda], { autoAlpha: 0, y: 24 });
-        // The snail is already at full size in the finale; the scroll slides it
-        // up rather than growing it, so a constant scale centred on the eyes
-        // never fights the vertical travel.
-        gsap.set(snail, { transformOrigin: "52% 33%", scale: 3.1 });
-        gsap.set(finaleIris, { transformBox: "fill-box", transformOrigin: "50% 50%" });
+        // The snail is already full size in the finale; the scroll slides it up
+        // rather than growing it, so the constant scale never fights the travel.
+        // The scale pivots on the snail's own eyes (their position in the flipped
+        // artwork, nudged left of centre so the head lands slightly right of the
+        // viewport) so the zoom crops in on the face without dragging the eyes
+        // off the head — they scale as one rigid unit with it.
+        gsap.set(snail, { transformOrigin: "-4% 35.7%", scale: 3.1 });
 
         // Function-based pixel translation: the scaled snail overflows the
         // riser box, so viewport-relative pixels (not the riser's unscaled
         // layout height) reliably carry it from below the fold up until only
-        // the eyes fill the frame.
+        // the head fills the frame.
         const startY = () => window.innerHeight * 1.15;
-        const endY = () => window.innerHeight * 0.4;
+        const endY = () => window.innerHeight * 0.05;
 
         const zoom = gsap.timeline({
           scrollTrigger: {
@@ -212,7 +214,7 @@ function build() {
           .to(finaleGlints, { autoAlpha: 0, duration: 0.3 }, 0.42)
           .to(
             finaleIris,
-            { fill: "#c81818", scale: 1.4, ease: "power2.in", duration: 0.55 },
+            { fill: "#c81818", ease: "power2.in", duration: 0.55 },
             0.48
           )
           .to(title, { autoAlpha: 1, y: 0, duration: 0.26 }, 0.6)
