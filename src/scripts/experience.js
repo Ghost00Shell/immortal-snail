@@ -46,7 +46,8 @@ function build() {
         });
         heroLines.forEach((line, i) => {
           const isOffer = line.classList.contains("hero__line--offer");
-          if (isOffer) {
+          const hasItalicStress = !!line.querySelector(".hero__stress");
+          if (isOffer && !hasItalicStress) {
             const split = new SplitText(line, { type: "words" });
             splits.push(split);
             gsap.set(line, { autoAlpha: 1 });
@@ -174,10 +175,10 @@ function build() {
         const snail = finale.querySelector("[data-finale-snail]");
         const title = finale.querySelector("[data-finale-title]");
         const coda = finale.querySelector("[data-finale-coda]");
-        // The dark irises redden while the white catch-light glints fade, so
-        // the eyes lose their friendly gleam without changing shape or size.
+        // The dark irises redden while the white catch-lights stay bright, so
+        // the whites remain visible as the mood turns hostile.
         const finaleIris = finale.querySelectorAll(".snail__iris");
-        const finaleGlints = finale.querySelectorAll(".snail__eye:not(.snail__iris)");
+        const finaleWhites = finale.querySelectorAll(".snail__eye:not(.snail__iris)");
 
         gsap.set([title, coda], { autoAlpha: 0, y: 24 });
         // The snail is already full size in the finale; the scroll slides it up
@@ -211,7 +212,6 @@ function build() {
             { y: endY, autoAlpha: 1, ease: "power1.out", duration: 1 },
             0
           )
-          .to(finaleGlints, { autoAlpha: 0, duration: 0.3 }, 0.42)
           .to(
             finaleIris,
             { fill: "#c81818", ease: "power2.in", duration: 0.55 },
@@ -219,6 +219,37 @@ function build() {
           )
           .to(title, { autoAlpha: 1, y: 0, duration: 0.26 }, 0.6)
           .to(coda, { autoAlpha: 1, y: 0, duration: 0.26 }, 0.76);
+
+        // The white eye highlights twitch rapidly while the finale is on screen.
+        let whitesWiggle;
+        let whitesWiggleTrigger;
+        if (finaleWhites.length) {
+          gsap.set(finaleWhites, { transformOrigin: "50% 50%" });
+          whitesWiggle = gsap.to(finaleWhites, {
+            keyframes: [
+              { x: -1.1, y: 0.7, rotation: -2.2, duration: 0.045 },
+              { x: 1.1, y: -0.8, rotation: 2.2, duration: 0.045 },
+            ],
+            repeat: -1,
+            yoyo: true,
+            ease: "none",
+            paused: true,
+          });
+          whitesWiggleTrigger = ScrollTrigger.create({
+            trigger: finale,
+            start: "top 92%",
+            end: "bottom top",
+            onEnter: () => whitesWiggle.play(),
+            onEnterBack: () => whitesWiggle.play(),
+            onLeave: () => whitesWiggle.pause(0),
+            onLeaveBack: () => whitesWiggle.pause(0),
+          });
+          cleanups.push(() => {
+            whitesWiggle.kill();
+            whitesWiggleTrigger.kill();
+            gsap.set(finaleWhites, { clearProps: "all" });
+          });
+        }
       }
 
       // ---- The Deal gate: the offer's condition is withheld until accepted ----
@@ -231,6 +262,9 @@ function build() {
       const heroSnail = document.querySelector("[data-hero-snail]");
       const companion = document.querySelector("[data-companion]");
       const floatEl = document.querySelector("[data-companion-float]");
+      const deathOverlay = document.querySelector("[data-death-overlay]");
+      const deathText = document.querySelector("[data-death-text]");
+      const deathRetry = document.querySelector("[data-death-retry]");
 
       // Only intercept when the page loaded armed (i.e. not deep-linked
       // straight to the condition), so a shared #the-condition URL stays legible.
@@ -276,12 +310,25 @@ function build() {
           const pad = Math.max(w, h) + 60; // distance past an edge that reads as "gone"
           const roamTweens = [];
           let alive = true;
+          let deathTriggered = false;
+          let wobble = null;
+          let loom = null;
+          let collisionFrame = 0;
+          const pointer = { x: Number.NaN, y: Number.NaN };
 
           const vw = () => window.innerWidth;
           const vh = () => window.innerHeight;
           // The companion is fixed at 0,0, so a translate equals the desired
           // centre minus half the snail's size.
           const toXY = (cx, cy) => ({ x: cx - w / 2, y: cy - h / 2 });
+          const stopRoamMotion = () => {
+            roamTweens.forEach((t) => t.kill());
+            roamTweens.length = 0;
+            if (wobble) wobble.kill();
+            if (loom) loom.kill();
+            gsap.killTweensOf(companion);
+            gsap.killTweensOf(snailEl);
+          };
 
           // Begin at the hero snail's spot if it's still on screen so the
           // hand-off is seamless; otherwise ease in from just above the fold.
@@ -357,6 +404,121 @@ function build() {
             }
           };
 
+          const onPointerMove = (event) => {
+            pointer.x = event.clientX;
+            pointer.y = event.clientY;
+          };
+
+          const triggerDeath = () => {
+            if (!alive || deathTriggered) return;
+            deathTriggered = true;
+            alive = false;
+            departureReached = true;
+            stopRoamMotion();
+            document.body.classList.add("is-dead");
+
+            const deathTl = gsap.timeline();
+            deathTl
+              .to(
+                snailEl,
+                {
+                  keyframes: [
+                    { rotation: -14, duration: 0.06 },
+                    { rotation: 14, duration: 0.06 },
+                    { rotation: -10, duration: 0.06 },
+                    { rotation: 10, duration: 0.06 },
+                    { rotation: 0, duration: 0.05 },
+                  ],
+                  transformOrigin: "50% 58%",
+                  ease: "power1.inOut",
+                },
+                0
+              )
+              .to(
+                snailEl,
+                {
+                  filter: "hue-rotate(-160deg) saturate(320%) brightness(0.8)",
+                  duration: 0.18,
+                  ease: "power2.in",
+                },
+                0.1
+              )
+              .to(
+                snailEl,
+                {
+                  scale: 1.95,
+                  autoAlpha: 0,
+                  duration: 0.24,
+                  ease: "power3.in",
+                },
+                0.24
+              );
+
+            if (deathOverlay && deathText) {
+              deathTl
+                .to(
+                  deathOverlay,
+                  {
+                    autoAlpha: 1,
+                    duration: 0.7,
+                    ease: "power2.in",
+                  },
+                  0.2
+                )
+                .to(
+                  deathText,
+                  {
+                    autoAlpha: 1,
+                    y: 0,
+                    duration: 0.4,
+                    ease: "power2.out",
+                  },
+                  0.62
+                );
+              if (deathRetry) {
+                deathTl.to(
+                  deathRetry,
+                  {
+                    autoAlpha: 1,
+                    ease: "none",
+                    keyframes: [
+                      { y: 30, rotation: -1.2, duration: 0.9, ease: "sine.inOut" },
+                      { y: 24, rotation: 1.3, duration: 0.9, ease: "sine.inOut" },
+                      { y: 17, rotation: -1, duration: 0.9, ease: "sine.inOut" },
+                      { y: 11, rotation: 1.1, duration: 0.9, ease: "sine.inOut" },
+                      { y: 5, rotation: -0.7, duration: 0.8, ease: "sine.inOut" },
+                      { y: 0, rotation: 0, duration: 0.6, ease: "power2.out" },
+                    ],
+                    onStart: () => gsap.set(deathRetry, { pointerEvents: "auto" }),
+                  },
+                  0.92
+                );
+              }
+            }
+          };
+
+          const checkCollision = () => {
+            if (!alive || deathTriggered) return;
+            if (Number.isFinite(pointer.x) && Number.isFinite(pointer.y)) {
+              const visible = Number(gsap.getProperty(companion, "opacity")) > 0.05;
+              if (!visible) {
+                collisionFrame = window.requestAnimationFrame(checkCollision);
+                return;
+              }
+              const rect = companion.getBoundingClientRect();
+              const hit =
+                pointer.x >= rect.left &&
+                pointer.x <= rect.right &&
+                pointer.y >= rect.top &&
+                pointer.y <= rect.bottom;
+              if (hit) {
+                triggerDeath();
+                return;
+              }
+            }
+            collisionFrame = window.requestAnimationFrame(checkCollision);
+          };
+
           // On deal acceptance, the hero snail visibly shrinks to companion size
           // before motion begins so the handoff reads as one continuous creature.
           if (onScreen && heroSnail && r) {
@@ -385,7 +547,7 @@ function build() {
             wander();
           }
 
-          const wobble = gsap.to(floatEl, {
+          wobble = gsap.to(floatEl, {
             yPercent: -9,
             rotation: 3,
             duration: 2.6,
@@ -395,7 +557,7 @@ function build() {
           });
 
           // It very slowly looms larger as you near the end.
-          const loom = gsap.fromTo(
+          loom = gsap.fromTo(
             floatEl,
             { scale: 1 },
             {
@@ -418,11 +580,7 @@ function build() {
           const depart = () => {
             if (!alive || departing) return;
             departing = true;
-            roamTweens.forEach((t) => t.kill());
-            roamTweens.length = 0;
-            wobble.kill();
-            loom.kill();
-            gsap.killTweensOf(companion);
+            stopRoamMotion();
             const curX = Number(gsap.getProperty(companion, "x")) || 0;
             const curY = Number(gsap.getProperty(companion, "y")) || 0;
             center = { x: curX + w / 2, y: curY + h / 2 };
@@ -433,16 +591,21 @@ function build() {
           };
           departRoam = depart;
 
+          window.addEventListener("pointermove", onPointerMove, { passive: true });
+          collisionFrame = window.requestAnimationFrame(checkCollision);
+
           cleanups.push(() => {
             alive = false;
-            roamTweens.forEach((t) => t.kill());
-            wobble.kill();
-            loom.kill();
-            gsap.killTweensOf(companion);
-            gsap.killTweensOf(snailEl);
+            stopRoamMotion();
+            window.removeEventListener("pointermove", onPointerMove);
+            if (collisionFrame) window.cancelAnimationFrame(collisionFrame);
+            document.body.classList.remove("is-dead");
             if (heroSnail) gsap.set(heroSnail, { clearProps: "all" });
             gsap.set(companion, { clearProps: "all" });
             gsap.set(snailEl, { clearProps: "all" });
+            if (deathOverlay) gsap.set(deathOverlay, { clearProps: "all" });
+            if (deathText) gsap.set(deathText, { clearProps: "all" });
+            if (deathRetry) gsap.set(deathRetry, { clearProps: "all" });
           });
 
           return true;
@@ -489,7 +652,9 @@ function build() {
         // Once the escalation resigns itself to the inevitable, the companion
         // leaves for good and hands the stage to the finale snail.
         const exitCue = document.querySelector("[data-companion-exit]");
+        const finaleSection = document.querySelector("[data-finale]");
         let exitTrigger;
+        let finaleExitTrigger;
         if (exitCue) {
           exitTrigger = ScrollTrigger.create({
             trigger: exitCue,
@@ -501,12 +666,37 @@ function build() {
             },
           });
         }
+        if (finaleSection) {
+          finaleExitTrigger = ScrollTrigger.create({
+            trigger: finaleSection,
+            start: "top 85%",
+            onEnter: () => {
+              departureReached = true;
+              if (departRoam) {
+                departRoam();
+              }
+            },
+            onEnterBack: () => {
+              departureReached = true;
+              if (departRoam) {
+                departRoam();
+              }
+            },
+          });
+        }
 
         cleanups.push(() => {
           if (dealBtn) dealBtn.removeEventListener("click", onDealClick);
           if (fallback) fallback.kill();
           if (exitTrigger) exitTrigger.kill();
+          if (finaleExitTrigger) finaleExitTrigger.kill();
         });
+      }
+
+      if (deathRetry) {
+        const onRetry = () => window.location.reload();
+        deathRetry.addEventListener("click", onRetry);
+        cleanups.push(() => deathRetry.removeEventListener("click", onRetry));
       }
 
       // ---- A shared, occasional blink across every snail on the page ----
