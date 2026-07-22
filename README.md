@@ -1,6 +1,6 @@
-# Immortal Snail
+# Immortal Snail 🐌
 
-Built for the [Best Landing Page GSAP Hackathon](https://codetv.link/gsap-hackathon) hosted by [CodeTV](https://codetv.dev/)!
+[This is my entry](https://immortal-snail.webflow.io/) built for the [Best Landing Page GSAP Hackathon](https://codetv.link/gsap-hackathon) hosted by [CodeTV](https://codetv.dev/)!
 
 ## What is this?
 
