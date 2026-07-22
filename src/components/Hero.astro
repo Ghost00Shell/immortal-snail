@@ -112,9 +112,11 @@ import Art from "../components/Art.astro";
     outline-offset: 3px;
   }
 
-  /* The catch. Visible by default; JS slides it in after the deal is struck. */
+  /* The catch. Visible by default; JS slides it in from the right after the
+     deal is struck, sitting right-aligned as the snail sets off roaming. */
   .hero__condition {
     margin-top: clamp(1.6rem, 4vw, 2.6rem);
+    margin-left: auto;
     max-width: 34rem;
     font-family: "Bricolage Grotesque Variable", sans-serif;
     font-size: var(--step-2);
@@ -122,6 +124,7 @@ import Art from "../components/Art.astro";
     letter-spacing: -0.02em;
     line-height: 1.15;
     color: var(--ink-soft);
+    text-align: right;
     text-wrap: balance;
   }
   .hero__condition:focus {
@@ -157,8 +160,13 @@ import Art from "../components/Art.astro";
     right: clamp(-2rem, 3vw, 5rem);
     bottom: clamp(4rem, 12vh, 10rem);
     width: clamp(160px, 26vw, 360px);
-		transform: scaleX(-1);
-    filter: drop-shadow(0 24px 30px rgba(40, 70, 80, 0.22));
+  }
+  /* Mirror the artwork to face left on load. It lives on the inner element
+     (rendered by the Art child component, so it needs :global to pierce
+     scoping), leaving the wrapper free for JS to scale with a clean positive
+     transform — animating a negative-scaleX node makes GSAP flip mid-tween. */
+  .hero__snail :global(.artwork) {
+    transform: scaleX(-1);
   }
 
   .hero__flora {

@@ -238,7 +238,8 @@ function build() {
 
       if (armed && conditionEl) {
         // Own the hidden state inline so GSAP animates from a known start.
-        gsap.set(conditionEl, { autoAlpha: 0, x: 48 });
+        // It waits off to the right and slides back in when the deal is struck.
+        gsap.set(conditionEl, { autoAlpha: 0, x: 96 });
         if (cueEl) gsap.set(cueEl, { autoAlpha: 0 });
 
         let activated = false;
@@ -247,10 +248,28 @@ function build() {
         // activation can never restart roaming through the finale.
         let departRoam = null;
         let departureReached = false;
+        let conditionRevealed = false;
 
+        // The withheld catch slides in from the right, timed to land as the
+        // snail begins to roam so the reveal and the hand-off read as one beat.
+        const revealCondition = () => {
+          if (conditionRevealed) return;
+          conditionRevealed = true;
+          gsap.to(conditionEl, {
+            autoAlpha: 1,
+            x: 0,
+            duration: 0.9,
+            ease: "power3.out",
+            onStart: () => conditionEl.focus({ preventScroll: true }),
+          });
+          if (cueEl) gsap.to(cueEl, { autoAlpha: 1, duration: 0.6, delay: 0.5 });
+        };
+
+        // Returns true only when the companion actually starts roaming, so the
+        // caller knows whether it still owes the condition its own reveal.
         const startRoam = () => {
-          if (!(fine && companion && floatEl)) return;
-          if (departureReached) return;
+          if (!(fine && companion && floatEl)) return false;
+          if (departureReached) return false;
           const snailEl = companion.querySelector(".companion__snail");
           const w = companion.offsetWidth || 80;
           const h = companion.offsetHeight || 80;
@@ -274,15 +293,15 @@ function build() {
             ? { x: r.left + r.width / 2, y: r.top + r.height / 2 }
             : { x: vw() * 0.5, y: -pad };
           gsap.set(companion, { ...toXY(center.x, center.y), autoAlpha: 0 });
-          gsap.set(snailEl, { scaleX: 1 }); // JS now owns which way it faces
-
-          gsap.to(companion, { autoAlpha: 1, duration: 1, delay: 0.15 });
-          if (heroSnail) gsap.to(heroSnail, { autoAlpha: 0, duration: 0.6 });
+          // Start facing left (scaleX -1) to match the hero snail's orientation,
+          // so the hand-off doesn't visibly flip. JS now owns which way it faces.
+          gsap.set(snailEl, { scaleX: -1 });
 
           const speed = 130; // px/sec — an unhurried, inevitable drift
-          let facing = 1;
-          // The art faces right at scaleX(1); flip it to match travel, but
-          // only on decisive horizontal movement so it doesn't jitter.
+          let facing = -1;
+          // The art faces right at scaleX(1), left at scaleX(-1); flip it to
+          // match travel, but only on decisive horizontal movement so it
+          // doesn't jitter.
           const face = (dx) => {
             if (Math.abs(dx) < 12) return;
             const dir = dx > 0 ? 1 : -1;
@@ -337,7 +356,34 @@ function build() {
               glideTo(insidePoint(), "sine.inOut", wander);
             }
           };
-          wander();
+
+          // On deal acceptance, the hero snail visibly shrinks to companion size
+          // before motion begins so the handoff reads as one continuous creature.
+          if (onScreen && heroSnail && r) {
+            const shrinkTo = gsap.utils.clamp(0.16, 1, w / r.width);
+            // The wrapper carries no mirror (the inner artwork does), so a plain
+            // uniform positive scale can never be read as a rotation or flip.
+            gsap.set(heroSnail, { transformOrigin: "50% 50%", scale: 1 });
+            roamTweens.push(
+              gsap.to(heroSnail, {
+                scale: shrinkTo,
+                duration: 0.58,
+                ease: "power2.inOut",
+                onComplete: () => {
+                  if (!alive) return;
+                  gsap.set(heroSnail, { autoAlpha: 0 });
+                  gsap.set(companion, { autoAlpha: 1 });
+                  revealCondition();
+                  wander();
+                },
+              })
+            );
+          } else {
+            gsap.set(companion, { autoAlpha: 1 });
+            if (heroSnail) gsap.set(heroSnail, { autoAlpha: 0 });
+            revealCondition();
+            wander();
+          }
 
           const wobble = gsap.to(floatEl, {
             yPercent: -9,
@@ -394,9 +440,12 @@ function build() {
             loom.kill();
             gsap.killTweensOf(companion);
             gsap.killTweensOf(snailEl);
+            if (heroSnail) gsap.set(heroSnail, { clearProps: "all" });
             gsap.set(companion, { clearProps: "all" });
             gsap.set(snailEl, { clearProps: "all" });
           });
+
+          return true;
         };
 
         const activate = () => {
@@ -405,16 +454,8 @@ function build() {
           if (dealBtn) dealBtn.removeEventListener("click", onDealClick);
           if (fallback) fallback.kill();
 
-          // Slide the condition in, then hand keyboard/SR focus to it before
-          // fading the button so focus is never stranded on a hidden element.
-          gsap.to(conditionEl, {
-            autoAlpha: 1,
-            x: 0,
-            duration: 0.9,
-            ease: "power3.out",
-            onStart: () => conditionEl.focus({ preventScroll: true }),
-          });
-          if (cueEl) gsap.to(cueEl, { autoAlpha: 1, duration: 0.6, delay: 0.5 });
+          // Fade the button out, moving keyboard/SR focus onto the condition
+          // (inside revealCondition) so focus is never stranded on it.
           if (dealBtn) {
             gsap.to(dealBtn, {
               autoAlpha: 0,
@@ -425,7 +466,10 @@ function build() {
             });
           }
 
-          startRoam();
+          // The catch is revealed by the roam hand-off once the snail starts
+          // moving. If roaming can't happen (coarse pointer, already departed),
+          // reveal it here so the condition is never left withheld.
+          if (!startRoam()) revealCondition();
         };
 
         const onDealClick = (e) => {

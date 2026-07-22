@@ -200,7 +200,7 @@ a {
     opacity: 0;
   }
   html.deal-armed [data-condition] {
-    transform: translateX(48px);
+    transform: translateX(96px);
   }
 }
 
